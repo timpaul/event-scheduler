@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>SyncUp - Group Scheduler</title>
+
+    <!-- 1. Load Firebase Compat SDKs (v11.6.1) -->
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
+
+    <!-- 2. Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- 3. Load React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.development.js"></script>
+
+    <!-- 4. Load Babel for JSX compilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        .pattern-diagonal-lines {
+          background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, #e5e7eb 5px, #e5e7eb 10px);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // Destructure React hooks
+        const { useState, useEffect, useMemo } = React;
+
+        // --- INTERNAL ICONS ---
+        const Icons = {
+            Calendar: (props) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>
+            ),
+            Clock: (props) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            ),
+            Users: (props) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            ),
+            Copy: (props) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            ),
+            Check: (props) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="20 6 9 17 4 12"/></svg>
+            ),
+            ChevronLeft: (props) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="15 18 9 12 15 6"/></svg>
+            ),
+            Share2: (props) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51L15.42 17.49"/><path d="M15.41 6.51L8.59 10.49"/></svg>
+            ),
+            Loader2: (props) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 12a9 9 0 1 1-6.219-8.48"/></svg>
+            ),
+            Info: (props) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            ),
+            ArrowRight: (props) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            )
+        };
+
+        const { 
+            Calendar, Clock, Copy, Users, Check, 
+            ChevronLeft, Share2, 
+            Loader2, Info, ArrowRight 
+        } = Icons;
+
+        // --- FIREBASE CONFIGURATION (Environment Aware) ---
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        
+        // Use environment App ID for path scoping
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app';
+
+        // --- UTILITY FUNCTIONS ---
+        const getNextDays = (startDate = new Date(), numDays = 5) => {
+            const days = [];
+            for (let i = 0; i < numDays; i++) {
+                const d = new Date(startDate);
+                d.setDate(d.getDate() + i);
+                d.setHours(0, 0, 0, 0);
+                days.push(d);
+            }
+            return days;
+        };
+
+        const formatDay = (isoString) => {
+            const d = new Date(isoString);
+            return new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).format(d);
+        };
+
+        const formatTime = (isoString) => {
+            const d = new Date(isoString);
+            return new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' }).format(d);
+        };
+
+        // --- MAIN COMPONENT ---
+        function SyncUp() {
+            // --- State ---
+            const [user, setUser] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [view, setView] = useState('home'); 
+            const [eventId, setEventId] = useState(null);
+            const [joinCode, setJoinCode] = useState('');
+            
+            // Event Creation State
+            const [newEventName, setNewEventName] = useState('');
+            const [eventDuration, setEventDuration] = useState(60); 
+            
+            // Active Event Data
+            const [eventData, setEventData] = useState(null);
+            const [userSlots, setUserSlots] = useState({}); 
+            const [isCopied, setIsCopied] = useState(false);
+            const [errorMsg, setErrorMsg] = useState('');
+
+            // --- Auth & Init ---
+            useEffect(() => {
+                const initAuth = async () => {
+                    try {
+                        // Priority: Custom Token -> Anonymous
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await auth.signInWithCustomToken(__initial_auth_token);
+                        } else {
+                            await auth.signInAnonymously();
+                        }
+                    } catch (error) {
+                        console.error("Auth error:", error);
+                        setErrorMsg("Authentication failed. Please refresh.");
+                    }
+                };
+                initAuth();
+
+                const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+                    setUser(currentUser);
+                    setLoading(false);
+                });
+
+                // Check URL for event ID
+                const params = new URLSearchParams(window.location.search);
+                const urlEventId = params.get('eventId');
+                if (urlEventId) {
+                    setEventId(urlEventId);
+                    setView('event');
+                }
+
+                return () => {
+                    if (typeof unsubscribe === 'function') unsubscribe();
+                };
+            }, []);
+
+            // --- Firestore Listeners ---
+            useEffect(() => {
+                if (!user || !eventId || view !== 'event') return;
+
+                // Path: artifacts/{appId}/public/data/events/{eventId}
+                const docRef = db.collection('artifacts')
+                                 .doc(appId)
+                                 .collection('public')
+                                 .doc('data')
+                                 .collection('events')
+                                 .doc(eventId);
+                
+                const unsubscribe = docRef.onSnapshot((snap) => {
+                    if (snap.exists) {
+                        const data = snap.data();
+                        setEventData(data);
+                        // Load user's previous selection if exists
+                        if (data.responses && data.responses[user.uid]) {
+                            const loadedSlots = {};
+                            data.responses[user.uid].forEach(slot => loadedSlots[slot] = true);
+                            setUserSlots(loadedSlots);
+                        } else {
+                            setUserSlots({});
+                        }
+                    } else {
+                        if (!loading) console.log("Event not found");
+                        setEventData(null);
+                        setUserSlots({});
+                    }
+                }, (err) => {
+                    console.error("Data fetch error", err);
+                    setErrorMsg("Error connecting to live data.");
+                });
+
+                return () => {
+                    if (typeof unsubscribe === 'function') unsubscribe();
+                };
+            }, [eventId, user, view, loading]);
+
+            // --- Actions ---
+            const handleCreateEvent = async () => {
+                if (!newEventName.trim() || !user) return;
+                
+                const newId = Math.random().toString(36).substring(2, 9); 
+                const newEvent = {
+                    id: newId,
+                    hostId: user.uid,
+                    name: newEventName,
+                    duration: eventDuration,
+                    createdAt: new Date().toISOString(),
+                    definedSlots: [], 
+                    responses: {},
+                    setupComplete: false 
+                };
+
+                try {
+                    // Safe Path: artifacts/{appId}/public/data/events/{newId}
+                    await db.collection('artifacts')
+                            .doc(appId)
+                            .collection('public')
+                            .doc('data')
+                            .collection('events')
+                            .doc(newId)
+                            .set(newEvent);
+
+                    setEventId(newId);
+                    setView('event');
+                } catch (e) {
+                    console.error("Error creating event:", e);
+                    setErrorMsg("Could not create event. Permissions may be restricted.");
+                }
+            };
+
+            const handleJoinEvent = () => {
+                if (joinCode.trim()) {
+                    setEventId(joinCode.trim());
+                    setView('event');
+                }
+            };
+
+            const toggleSlot = async (isoSlot) => {
+                if (!eventData || !user) return;
+
+                const isHost = eventData.hostId === user.uid;
+                const isSetupMode = isHost && (eventData.setupComplete === false || (eventData.setupComplete === undefined && (!eventData.definedSlots || eventData.definedSlots.length === 0)));
+
+                const newSlots = { ...userSlots };
+                if (newSlots[isoSlot]) {
+                    delete newSlots[isoSlot];
+                } else {
+                    newSlots[isoSlot] = true;
+                }
+                setUserSlots(newSlots);
+
+                const docRef = db.collection('artifacts')
+                                 .doc(appId)
+                                 .collection('public')
+                                 .doc('data')
+                                 .collection('events')
+                                 .doc(eventId);
+                
+                if (isSetupMode) {
+                    let updatedDefinedSlots = eventData.definedSlots || [];
+                    if (updatedDefinedSlots.includes(isoSlot)) {
+                        updatedDefinedSlots = updatedDefinedSlots.filter(s => s !== isoSlot);
+                    } else {
+                        updatedDefinedSlots.push(isoSlot);
+                    }
+
+                    const updateObj = {};
+                    updateObj['definedSlots'] = updatedDefinedSlots;
+                    updateObj[`responses.${user.uid}`] = updatedDefinedSlots;
+
+                    try {
+                        await docRef.update(updateObj);
+                    } catch (e) {
+                        console.error("Error updating setup slots:", e);
+                    }
+                } else {
+                    const selectedSlotArray = Object.keys(newSlots);
+                    const updateObj = {};
+                    updateObj[`responses.${user.uid}`] = selectedSlotArray;
+                    try {
+                        await docRef.update(updateObj);
+                    } catch (e) {
+                        console.error("Error updating responses:", e);
+                    }
+                }
+            };
+
+            const finishSetup = async () => {
+                if (!eventId) return;
+                const docRef = db.collection('artifacts')
+                                 .doc(appId)
+                                 .collection('public')
+                                 .doc('data')
+                                 .collection('events')
+                                 .doc(eventId);
+                try {
+                    await docRef.update({ setupComplete: true });
+                } catch (e) {
+                    console.error("Error finishing setup", e);
+                }
+            };
+
+            const copyLink = () => {
+                // Using document.execCommand for iframe compatibility per instructions
+                const dummy = document.createElement("textarea");
+                document.body.appendChild(dummy);
+                dummy.value = `${window.location.origin}${window.location.pathname}?eventId=${eventId}`;
+                dummy.select();
+                document.execCommand("copy");
+                document.body.removeChild(dummy);
+
+                setIsCopied(true);
+                setTimeout(() => setIsCopied(false), 2000);
+            };
+
+            // --- Derived State ---
+            const gridData = useMemo(() => {
+                if (!eventData) return { headers: [], rows: [] };
+
+                const definedSlots = eventData.definedSlots || [];
+                const hasDefinedSlots = definedSlots.length > 0;
+                const isSetupMode = (eventData.setupComplete === false) || (eventData.setupComplete === undefined && definedSlots.length === 0);
+
+                let relevantDays = [];
+                
+                if (isSetupMode) {
+                    const startDate = eventData.createdAt ? new Date(eventData.createdAt) : new Date();
+                    relevantDays = getNextDays(startDate, 5);
+                } else {
+                    if (hasDefinedSlots) {
+                        const uniqueDates = new Set(definedSlots.map(s => s.split('T')[0]));
+                        relevantDays = Array.from(uniqueDates).sort().map(dStr => new Date(dStr));
+                    } else {
+                        const startDate = eventData.createdAt ? new Date(eventData.createdAt) : new Date();
+                        relevantDays = getNextDays(startDate, 5); 
+                    }
+                }
+
+                const headers = relevantDays.map(d => ({
+                    label: formatDay(d.toISOString()),
+                    isoDate: d.toISOString().split('T')[0]
+                }));
+
+                const startHour = 8;
+                const endHour = 22;
+                const times = [];
+                for(let h=startHour; h<endHour; h++) {
+                    for(let m=0; m<60; m+=30) {
+                        times.push(`${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:00`);
+                    }
+                }
+
+                const rows = times.map(timeStr => {
+                    return {
+                        timeLabel: formatTime(`2023-01-01T${timeStr}`),
+                        cells: headers.map(header => {
+                            const fullIso = `${header.isoDate}T${timeStr}`; 
+                            let voteCount = 0;
+                            let totalResponders = 0;
+                            
+                            if (eventData.responses) {
+                                const userIds = Object.keys(eventData.responses);
+                                totalResponders = userIds.length;
+                                userIds.forEach(uid => {
+                                    if (eventData.responses[uid].includes(fullIso)) {
+                                        voteCount++;
+                                    }
+                                });
+                            }
+
+                            const isDefined = isSetupMode ? true : (hasDefinedSlots ? definedSlots.includes(fullIso) : true);
+
+                            return {
+                                id: fullIso,
+                                voteCount,
+                                totalResponders,
+                                isDefined,
+                                isSelected: !!userSlots[fullIso]
+                            };
+                        })
+                    };
+                });
+
+                return { headers, rows, isSetupMode };
+            }, [eventData, userSlots]);
+
+            // --- Views ---
+            if (loading) {
+                return (
+                    <div className="flex items-center justify-center min-h-screen bg-gray-50 text-emerald-600">
+                        <Loader2 className="w-8 h-8 animate-spin" />
+                    </div>
+                );
+            }
+
+            if (view === 'home') {
+                return (
+                    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 font-sans">
+                        <div className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden">
+                            <div className="bg-emerald-600 p-6 text-center">
+                                <Calendar className="w-12 h-12 text-white mx-auto mb-2" />
+                                <h1 className="text-3xl font-bold text-white">SyncUp</h1>
+                                <p className="text-emerald-100 mt-1">Simple group scheduling</p>
+                            </div>
+                            <div className="p-8 space-y-8">
+                                <div>
+                                    <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                        <Clock className="w-5 h-5 text-emerald-600" />
+                                        New Event
+                                    </h2>
+                                    <div className="space-y-4">
+                                        <input
+                                            type="text"
+                                            placeholder="e.g. Project Kickoff"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                                            value={newEventName}
+                                            onChange={(e) => setNewEventName(e.target.value)}
+                                        />
+                                        <select 
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                                            value={eventDuration}
+                                            onChange={(e) => setEventDuration(Number(e.target.value))}
+                                        >
+                                            <option value={30}>30 Minutes</option>
+                                            <option value={60}>60 Minutes</option>
+                                            <option value={90}>90 Minutes</option>
+                                            <option value={120}>2 Hours</option>
+                                        </select>
+                                        <button 
+                                            onClick={handleCreateEvent}
+                                            disabled={!newEventName}
+                                            className={`w-full py-2.5 rounded-lg font-medium transition-colors ${newEventName ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-gray-200 text-gray-400'}`}
+                                        >
+                                            Create Event
+                                        </button>
+                                        {errorMsg && <p className="text-red-500 text-sm mt-2">{errorMsg}</p>}
+                                    </div>
+                                </div>
+                                <div className="border-t border-gray-100"></div>
+                                <div>
+                                    <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                        <Users className="w-5 h-5 text-blue-600" />
+                                        Join Existing
+                                    </h2>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            placeholder="Enter Event Code"
+                                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                            value={joinCode}
+                                            onChange={(e) => setJoinCode(e.target.value)}
+                                        />
+                                        <button 
+                                            onClick={handleJoinEvent}
+                                            className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700"
+                                        >
+                                            Join
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            const isSetupMode = (eventData && eventData.hostId === user.uid) && gridData.isSetupMode;
+
+            return (
+                <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
+                    <header className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+                        <div className="max-w-6xl mx-auto px-4 py-4">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div>
+                                    <div className="flex items-center gap-2 text-gray-500 text-sm mb-1">
+                                        <button onClick={() => setView('home')} className="hover:text-emerald-600 flex items-center">
+                                            <ChevronLeft className="w-4 h-4" /> Event scheduler
+                                        </button>
+                                        <span>/</span>
+                                        <span>{eventDuration} mins</span>
+                                    </div>
+                                    <h1 className="text-2xl font-bold text-gray-900">{eventData?.name}</h1>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-gray-100 px-4 py-2 rounded-lg flex items-center gap-3 border border-gray-200">
+                                        <div className="text-xs text-gray-500 uppercase font-semibold tracking-wider">Event Code</div>
+                                        <div className="font-mono font-bold text-lg text-gray-800">{eventId}</div>
+                                    </div>
+                                    <button 
+                                        onClick={copyLink}
+                                        className="p-2 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
+                                    >
+                                        {isCopied ? <Check className="w-5 h-5" /> : <Share2 className="w-5 h-5" />}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+                    <main className="flex-1 overflow-auto p-4 md:p-8">
+                        <div className="max-w-6xl mx-auto">
+                            <div className={`mb-6 p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 ${isSetupMode ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-white text-gray-700 border border-gray-100'}`}>
+                                <div className="flex items-start gap-3">
+                                    <Info className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <h3 className="font-semibold">{isSetupMode ? "Define Event Times" : "Select Your Availability"}</h3>
+                                        <p className="text-sm opacity-90 mt-1">
+                                            {isSetupMode ? "Select all potential time slots for this meeting. When you are finished, click the button to start inviting guests." : "Tap the slots you are available for; changes save automatically."}
+                                        </p>
+                                    </div>
+                                </div>
+                                {isSetupMode && (
+                                    <button onClick={finishSetup} className="flex-shrink-0 bg-amber-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-amber-700 flex items-center gap-2 shadow-sm">
+                                        Finish Setup <ArrowRight className="w-4 h-4" />
+                                    </button>
+                                )}
+                            </div>
+                            {!isSetupMode && (
+                                <div className="flex items-center justify-end gap-4 mb-4 text-sm text-gray-600">
+                                   <div className="flex items-center gap-2"><div className="w-4 h-4 rounded border border-emerald-500 bg-white"></div><span>You</span></div>
+                                   <div className="flex items-center gap-2"><div className="w-4 h-4 rounded bg-emerald-200"></div><span>Others Available</span></div>
+                                   <div className="flex items-center gap-2"><div className="w-4 h-4 rounded bg-emerald-600"></div><span>Best Time</span></div>
+                                </div>
+                            )}
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                                <div className="overflow-x-auto">
+                                    <div className="inline-block min-w-full">
+                                        <div className="flex border-b border-gray-200">
+                                            <div className="w-20 flex-shrink-0 p-3 bg-gray-50 border-r border-gray-200"></div>
+                                            {gridData.headers.map((day) => (
+                                                <div key={day.isoDate} className="flex-1 min-w-[100px] p-3 text-center bg-gray-50 border-r border-gray-200 last:border-r-0">
+                                                    <div className="font-semibold text-gray-700">{day.label.split(',')[0]}</div>
+                                                    <div className="text-xs text-gray-500">{day.label.split(',')[1]}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="max-h-[60vh] overflow-y-auto">
+                                            {gridData.rows.map((row) => (
+                                                <div key={row.timeLabel} className="flex border-b border-gray-100 last:border-b-0 h-12">
+                                                    <div className="w-20 flex-shrink-0 p-2 text-xs text-gray-500 text-right bg-white border-r border-gray-200 sticky left-0 z-10 flex items-center justify-end">
+                                                        {row.timeLabel}
+                                                    </div>
+                                                    {row.cells.map((cell) => {
+                                                        if (!cell.isDefined) {
+                                                            return <div key={cell.id} className="flex-1 min-w-[100px] bg-gray-100 border-r border-gray-100 last:border-r-0 cursor-not-allowed pattern-diagonal-lines"></div>
+                                                        }
+                                                        let style = {};
+                                                        let bgColorClass = 'bg-white';
+                                                        if (isSetupMode) {
+                                                            bgColorClass = cell.isSelected ? 'bg-amber-200 ring-2 ring-inset ring-amber-400' : 'bg-white hover:bg-gray-50';
+                                                        } else {
+                                                            const ratio = cell.totalResponders > 0 ? (cell.voteCount / cell.totalResponders) : 0;
+                                                            if (ratio > 0) style.backgroundColor = `rgba(5, 150, 105, ${Math.max(0.1, ratio)})`;
+                                                            else style.backgroundColor = 'white';
+                                                            if (cell.isSelected) {
+                                                                style.border = '2px solid #059669';
+                                                                style.boxShadow = 'inset 0 0 0 2px #ecfdf5';
+                                                            }
+                                                        }
+                                                        return (
+                                                            <div key={cell.id} onClick={() => toggleSlot(cell.id)} className={`flex-1 min-w-[100px] border-r border-gray-100 last:border-r-0 cursor-pointer relative p-1 ${bgColorClass}`} style={style}>
+                                                                {!isSetupMode && cell.voteCount > 0 && (
+                                                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                        <span className="bg-black/75 text-white text-xs px-2 py-1 rounded-full font-bold">{cell.voteCount}/{cell.totalResponders}</span>
+                                                                    </div>
+                                                                )}
+                                                                {cell.isSelected && <div className="absolute top-1 right-1"><div className={`w-2 h-2 rounded-full ${isSetupMode ? 'bg-amber-600' : 'bg-emerald-600'}`}></div></div>}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="mt-8 text-center text-sm text-gray-400"><p>Changes save automatically.</p></div>
+                        </div>
+                    </main>
+                </div>
+            );
+        }
+
+        // Mount the application
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<SyncUp />);
+    </script>
+</body>
+</html>

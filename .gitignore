@@ -1,0 +1,19 @@
+# Dependency directories
+node_modules/
+
+# Database
+*.db
+*.sqlite
+server/syncup.db
+
+# Build output
+dist/
+dist-ssr/
+*.local
+
+# System files
+.DS_Store
+.tcc_state
+
+# Environment variables
+.env
