@@ -349,7 +349,14 @@ function App() {
             }
 
             // Optimistic event data update
-            setEventData(prev => ({ ...prev, definedSlots: updatedDefinedSlots }));
+            setEventData(prev => ({
+                ...prev,
+                definedSlots: updatedDefinedSlots,
+                responses: {
+                    ...(prev.responses || {}),
+                    [user.uid]: updatedDefinedSlots
+                }
+            }));
 
             try {
                 // Determine completion status logic? No, just update slots.
@@ -556,10 +563,10 @@ function App() {
                                     value={eventDuration}
                                     onChange={(e) => setEventDuration(Number(e.target.value))}
                                 >
-                                    <option value={30}>30 Minutes</option>
-                                    <option value={60}>60 Minutes</option>
-                                    <option value={90}>90 Minutes</option>
-                                    <option value={120}>2 Hours</option>
+                                    <option value={30}>30 minutes</option>
+                                    <option value={60}>60 minutes</option>
+                                    <option value={90}>90 minutes</option>
+                                    <option value={120}>2 hours</option>
                                 </select>
                                 <button
                                     onClick={handleCreateEvent}
@@ -683,7 +690,7 @@ function App() {
                         <div className="flex items-start gap-3">
                             <Info className="w-5 h-5 flex-shrink-0 mt-0.5 text-emerald-600" />
                             <div>
-                                <h3 className="font-semibold">{isSetupMode ? "Define event times" : "The host of this event wants to invite you"}</h3>
+                                <h3 className="font-semibold">{isSetupMode ? "Define event times" : "Someone wants to invite you to this event"}</h3>
                                 <p className="text-sm opacity-90 mt-1">
                                     {isSetupMode ? "Select all potential time slots for this event, then click the button to share an event link." : "Select the time slots that you are available so they can schedule it."}
                                 </p>
