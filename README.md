@@ -1,4 +1,4 @@
-# SyncUp
+# Event scheduler
 
 A simple group scheduling application.
 
