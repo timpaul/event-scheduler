@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const db = require('./db');
+const path = require('path');
 const app = express();
 const PORT = 3000;
 
@@ -107,6 +108,15 @@ app.delete('/api/events/:id', (req, res) => {
         console.error(e);
         res.status(500).json({ error: 'Internal Server Error' });
     }
+});
+
+// Serve static files from the client app
+app.use(express.static(path.join(__dirname, '../client/dist')));
+
+// The "catchall" handler: for any request that doesn't
+// match one above, send back React's index.html file.
+app.get(/(.*)/, (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/dist/index.html'));
 });
 
 app.listen(PORT, () => {
