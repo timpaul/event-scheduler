@@ -169,9 +169,10 @@ function App() {
         }
 
         // Check URL for event ID
-        const pathmatch = window.location.pathname.match(/^\/event\/([^/]+)/);
-        if (pathmatch && pathmatch[1]) {
-            setEventId(pathmatch[1]);
+        const params = new URLSearchParams(window.location.search);
+        const urlEventId = params.get('eventId');
+        if (urlEventId) {
+            setEventId(urlEventId);
             setView('event');
         }
     }, []);
@@ -295,7 +296,9 @@ function App() {
             setEventId(created.id);
             setView('event');
             // Update URL
-            window.history.pushState({}, '', `/event/${created.id}`);
+            const url = new URL(window.location);
+            url.searchParams.set('eventId', created.id);
+            window.history.pushState({}, '', url);
         } catch (e) {
             console.error("Error creating event:", e);
             setErrorMsg("Could not create event.");
@@ -307,7 +310,9 @@ function App() {
             setEventId(joinCode.trim());
             setView('event');
             // Update URL
-            window.history.pushState({}, '', `/event/${joinCode.trim()}`);
+            const url = new URL(window.location);
+            url.searchParams.set('eventId', joinCode.trim());
+            window.history.pushState({}, '', url);
         }
     };
 
@@ -396,7 +401,7 @@ function App() {
     };
 
     const copyLink = () => {
-        const url = `${window.location.origin}/event/${eventId}`;
+        const url = `${window.location.origin}${window.location.pathname}?eventId=${eventId}`;
         navigator.clipboard.writeText(url).then(() => {
             setIsCopied(true);
             setTimeout(() => setIsCopied(false), 2000);
@@ -422,7 +427,7 @@ function App() {
             if (eventId === id) {
                 setView('home');
                 setEventId(null);
-                window.history.pushState({}, '', '/');
+                window.history.pushState({}, '', window.location.pathname);
             }
         } catch (err) {
             console.error("Failed to delete", err);
@@ -591,8 +596,9 @@ function App() {
                                                 onClick={() => {
                                                     setEventId(evt.id);
                                                     setView('event');
-                                                    setView('event');
-                                                    window.history.pushState({}, '', `/event/${evt.id}`);
+                                                    const url = new URL(window.location);
+                                                    url.searchParams.set('eventId', evt.id);
+                                                    window.history.pushState({}, '', url);
                                                 }}
                                             >
                                                 <div className="flex items-center gap-2">
@@ -664,7 +670,7 @@ function App() {
                                     onClick={() => {
                                         setView('home');
                                         setEventId(null);
-                                        window.history.pushState({}, '', '/');
+                                        window.history.pushState({}, '', window.location.pathname);
                                     }}
                                     className="hover:text-emerald-600 hover:underline"
                                 >
@@ -751,16 +757,16 @@ function App() {
                             </thead>
                             <tbody className="bg-gray-50 pattern-diagonal-lines">
                                 {gridData.rows.map((row) => (
-                                    <tr key={row.timeLabel} id={`time-row-${row.cells[0].id.split('T')[1]}`} className="h-12">
+                                    <tr key={row.timeLabel} id={`time-row-${row.cells[0].id.split('T')[1]}`} className="h-8">
                                         <td className="w-28 sticky left-0 z-10 bg-white border-r border-b border-gray-300 p-0">
-                                            <div className="h-12 flex items-center justify-end p-2 text-xs text-gray-500">
+                                            <div className="h-8 flex items-center justify-end p-2 text-xs text-gray-500">
                                                 {row.timeLabel}
                                             </div>
                                         </td>
                                         {row.cells.map((cell) => {
                                             if (!cell.isDefined) {
                                                 return (
-                                                    <td key={cell.id} className="border-r border-b border-gray-300 bg-transparent last:border-r-0 p-0 h-12 cursor-not-allowed">
+                                                    <td key={cell.id} className="border-r border-b border-gray-300 bg-transparent last:border-r-0 p-0 h-8 cursor-not-allowed">
                                                     </td>
                                                 );
                                             }
@@ -783,7 +789,7 @@ function App() {
                                                 : 'bg-white border border-emerald-500'; // Hollow
 
                                             return (
-                                                <td key={cell.id} onClick={() => toggleSlot(cell.id)} className="border-r border-b border-gray-300 last:border-r-0 p-0 h-12 cursor-pointer relative group">
+                                                <td key={cell.id} onClick={() => toggleSlot(cell.id)} className="border-r border-b border-gray-300 last:border-r-0 p-0 h-8 cursor-pointer relative group">
                                                     <div className={`w-full h-full relative ${bgColorClass}`}>
                                                         {/* Participant Dots */}
                                                         {cell.voteCount > 0 && (
