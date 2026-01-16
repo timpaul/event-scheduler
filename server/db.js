@@ -3,7 +3,9 @@ const path = require('path');
 const fs = require('fs');
 
 // Ensure data directory exists
-const dbPath = path.join(__dirname, 'syncup.db');
+const dbPath = process.env.DATA_DIR
+    ? path.join(process.env.DATA_DIR, 'syncup.db')
+    : path.join(__dirname, 'syncup.db');
 const db = new Database(dbPath);
 
 function init() {
