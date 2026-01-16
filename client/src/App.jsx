@@ -167,13 +167,28 @@ function App() {
         } catch (e) {
             console.error("Error loading saved events", e);
         }
+    }, []);
 
-        // Check URL for event ID
-        const pathmatch = window.location.pathname.match(/^\/event\/([^/]+)/);
-        if (pathmatch && pathmatch[1]) {
-            setEventId(pathmatch[1]);
-            setView('event');
-        }
+    useEffect(() => {
+        const handlePopState = () => {
+            const pathmatch = window.location.pathname.match(/^\/event\/([^/]+)/);
+            if (pathmatch && pathmatch[1]) {
+                setEventId(pathmatch[1]);
+                setEventData(null);
+                setUserSlots({});
+                setView('event');
+            } else {
+                setEventId(null);
+                setEventData(null);
+                setUserSlots({});
+                setNewEventName('');
+                setView('home');
+            }
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        handlePopState();
+        return () => window.removeEventListener('popstate', handlePopState);
     }, []);
 
     const saveEventToHistory = (evt) => {
