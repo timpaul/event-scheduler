@@ -261,6 +261,8 @@ function App() {
                         const loadedSlots = {};
                         data.responses[user.uid].forEach(slot => loadedSlots[slot] = true);
                         setUserSlots(loadedSlots);
+                    } else {
+                        setUserSlots({});
                     }
                 } else {
                     setEventData(null); // Event not found
@@ -293,6 +295,8 @@ function App() {
         try {
             const created = await api.createEvent(newEvent);
             setEventId(created.id);
+            setEventData(null);
+            setUserSlots({});
             setView('event');
             // Update URL
             window.history.pushState({}, '', `/event/${created.id}`);
@@ -305,6 +309,8 @@ function App() {
     const handleJoinEvent = () => {
         if (joinCode.trim()) {
             setEventId(joinCode.trim());
+            setEventData(null);
+            setUserSlots({});
             setView('event');
             // Update URL
             window.history.pushState({}, '', `/event/${joinCode.trim()}`);
@@ -590,6 +596,8 @@ function App() {
                                                 className="flex-1 cursor-pointer"
                                                 onClick={() => {
                                                     setEventId(evt.id);
+                                                    setEventData(null);
+                                                    setUserSlots({});
                                                     setView('event');
                                                     window.history.pushState({}, '', `/event/${evt.id}`);
                                                 }}
@@ -663,6 +671,8 @@ function App() {
                                     onClick={() => {
                                         setView('home');
                                         setEventId(null);
+                                        setEventData(null);
+                                        setUserSlots({});
                                         window.history.pushState({}, '', '/');
                                     }}
                                     className="hover:text-emerald-600 hover:underline"
