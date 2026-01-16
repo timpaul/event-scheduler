@@ -297,6 +297,7 @@ function App() {
             setEventId(created.id);
             setEventData(null);
             setUserSlots({});
+            setNewEventName('');
             setView('event');
             // Update URL
             window.history.pushState({}, '', `/event/${created.id}`);
@@ -673,6 +674,7 @@ function App() {
                                         setEventId(null);
                                         setEventData(null);
                                         setUserSlots({});
+                                        setNewEventName('');
                                         window.history.pushState({}, '', '/');
                                     }}
                                     className="hover:text-emerald-600 hover:underline"
@@ -704,7 +706,14 @@ function App() {
                                 {isCopied ? "Link copied!" : "Share event link"} {isCopied ? <Check className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
                             </button>
                         ) : (
-                            <button onClick={() => setView('home')} className="flex-shrink-0 bg-emerald-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-emerald-700 flex items-center gap-2 shadow-sm">
+                            <button onClick={() => {
+                                setView('home');
+                                setEventId(null);
+                                setEventData(null);
+                                setUserSlots({});
+                                setNewEventName('');
+                                window.history.pushState({}, '', '/');
+                            }} className="flex-shrink-0 bg-emerald-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-emerald-700 flex items-center gap-2 shadow-sm">
                                 I'm done <Check className="w-4 h-4" />
                             </button>
                         )}
