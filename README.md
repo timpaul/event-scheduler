@@ -6,32 +6,42 @@ A simple group scheduling application.
 - Node.js (v18+)
 - npm
 
-## Setup
+## Quick Start
+
+1. Install dependencies and build:
+   ```bash
+   npm run build
+   ```
+
+2. Start the application:
+   ```bash
+   npm start
+   ```
+   The app will typically run on http://localhost:3000
+
+## Development Setup
+
+If you want to run the backend and frontend separately for development:
 
 1. Install dependencies:
+   ```bash
+   cd server && npm install
+   cd ../client && npm install
+   ```
 
-```bash
-cd server && npm install
-cd ../client && npm install
-```
+2. Run the Backend (Terminal 1):
+   ```bash
+   cd server
+   node index.js
+   ```
+   Server runs on http://localhost:3000
 
-## Running the App
-
-You need to run both the backend server and the frontend client.
-
-**Terminal 1 (Backend):**
-```bash
-cd server
-node index.js
-```
-Server runs on http://localhost:3000
-
-**Terminal 2 (Frontend):**
-```bash
-cd client
-npm run dev
-```
-Client runs on http://localhost:5173
+3. Run the Frontend (Terminal 2):
+   ```bash
+   cd client
+   npm run dev
+   ```
+   Client runs on http://localhost:5173
 
 ## Features
 - Create events with varying durations.

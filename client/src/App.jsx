@@ -169,10 +169,9 @@ function App() {
         }
 
         // Check URL for event ID
-        const params = new URLSearchParams(window.location.search);
-        const urlEventId = params.get('eventId');
-        if (urlEventId) {
-            setEventId(urlEventId);
+        const pathmatch = window.location.pathname.match(/^\/event\/([^/]+)/);
+        if (pathmatch && pathmatch[1]) {
+            setEventId(pathmatch[1]);
             setView('event');
         }
     }, []);
@@ -296,9 +295,7 @@ function App() {
             setEventId(created.id);
             setView('event');
             // Update URL
-            const url = new URL(window.location);
-            url.searchParams.set('eventId', created.id);
-            window.history.pushState({}, '', url);
+            window.history.pushState({}, '', `/event/${created.id}`);
         } catch (e) {
             console.error("Error creating event:", e);
             setErrorMsg("Could not create event.");
@@ -310,9 +307,7 @@ function App() {
             setEventId(joinCode.trim());
             setView('event');
             // Update URL
-            const url = new URL(window.location);
-            url.searchParams.set('eventId', joinCode.trim());
-            window.history.pushState({}, '', url);
+            window.history.pushState({}, '', `/event/${joinCode.trim()}`);
         }
     };
 
@@ -401,7 +396,7 @@ function App() {
     };
 
     const copyLink = () => {
-        const url = `${window.location.origin}${window.location.pathname}?eventId=${eventId}`;
+        const url = `${window.location.origin}/event/${eventId}`;
         navigator.clipboard.writeText(url).then(() => {
             setIsCopied(true);
             setTimeout(() => setIsCopied(false), 2000);
@@ -427,7 +422,7 @@ function App() {
             if (eventId === id) {
                 setView('home');
                 setEventId(null);
-                window.history.pushState({}, '', window.location.pathname);
+                window.history.pushState({}, '', '/');
             }
         } catch (err) {
             console.error("Failed to delete", err);
@@ -596,9 +591,7 @@ function App() {
                                                 onClick={() => {
                                                     setEventId(evt.id);
                                                     setView('event');
-                                                    const url = new URL(window.location);
-                                                    url.searchParams.set('eventId', evt.id);
-                                                    window.history.pushState({}, '', url);
+                                                    window.history.pushState({}, '', `/event/${evt.id}`);
                                                 }}
                                             >
                                                 <div className="flex items-center gap-2">
@@ -670,7 +663,7 @@ function App() {
                                     onClick={() => {
                                         setView('home');
                                         setEventId(null);
-                                        window.history.pushState({}, '', window.location.pathname);
+                                        window.history.pushState({}, '', '/');
                                     }}
                                     className="hover:text-emerald-600 hover:underline"
                                 >
